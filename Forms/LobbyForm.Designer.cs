@@ -28,10 +28,11 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             btnGetMatchs = new Button();
             panel1 = new Panel();
             lblGetMatchesResponse = new Label();
-            lboMatchs = new ListBox();
+            lboMatches = new ListBox();
             label3 = new Label();
             label2 = new Label();
             cboMatchsStatus = new ComboBox();
@@ -57,6 +58,7 @@
             lbVersion = new Label();
             lbGroup = new Label();
             panel3 = new Panel();
+            btnPartidaTeste = new Button();
             lblWarningError = new Label();
             lblPasswordPlayer = new Label();
             lblIdPlayer = new Label();
@@ -67,7 +69,7 @@
             txtBox_IdMatch = new TextBox();
             label10 = new Label();
             btnEnterMatch = new Button();
-            btnPartidaTeste = new Button();
+            notifyIcon1 = new NotifyIcon(components);
             panel1.SuspendLayout();
             panel2.SuspendLayout();
             panel4.SuspendLayout();
@@ -90,7 +92,7 @@
             // 
             panel1.BorderStyle = BorderStyle.FixedSingle;
             panel1.Controls.Add(lblGetMatchesResponse);
-            panel1.Controls.Add(lboMatchs);
+            panel1.Controls.Add(lboMatches);
             panel1.Controls.Add(label3);
             panel1.Controls.Add(label2);
             panel1.Controls.Add(cboMatchsStatus);
@@ -110,15 +112,15 @@
             lblGetMatchesResponse.Size = new Size(319, 16);
             lblGetMatchesResponse.TabIndex = 15;
             // 
-            // lboMatchs
+            // lboMatches
             // 
-            lboMatchs.FormattingEnabled = true;
-            lboMatchs.ItemHeight = 15;
-            lboMatchs.Location = new Point(21, 86);
-            lboMatchs.Margin = new Padding(3, 2, 3, 2);
-            lboMatchs.Name = "lboMatchs";
-            lboMatchs.Size = new Size(320, 244);
-            lboMatchs.TabIndex = 14;
+            lboMatches.FormattingEnabled = true;
+            lboMatches.ItemHeight = 15;
+            lboMatches.Location = new Point(21, 86);
+            lboMatches.Margin = new Padding(3, 2, 3, 2);
+            lboMatches.Name = "lboMatches";
+            lboMatches.Size = new Size(320, 244);
+            lboMatches.TabIndex = 14;
             // 
             // label3
             // 
@@ -309,7 +311,7 @@
             label5.AutoSize = true;
             label5.Location = new Point(33, 19);
             label5.Name = "label5";
-            label5.Size = new Size(73, 15);
+            label5.Size = new Size(105, 15);
             label5.TabIndex = 16;
             label5.Text = "PlayerId da Partida";
             // 
@@ -369,6 +371,16 @@
             panel3.Name = "panel3";
             panel3.Size = new Size(219, 362);
             panel3.TabIndex = 20;
+            // 
+            // btnPartidaTeste
+            // 
+            btnPartidaTeste.Location = new Point(121, 326);
+            btnPartidaTeste.Name = "btnPartidaTeste";
+            btnPartidaTeste.Size = new Size(93, 23);
+            btnPartidaTeste.TabIndex = 11;
+            btnPartidaTeste.Text = "Partida de Teste";
+            btnPartidaTeste.UseVisualStyleBackColor = true;
+            btnPartidaTeste.Click += btnPartidaTeste_Click;
             // 
             // lblWarningError
             // 
@@ -452,18 +464,13 @@
             btnEnterMatch.UseVisualStyleBackColor = true;
             btnEnterMatch.Click += btnEnterMatch_Click;
             // 
-            // btnPartidaTeste
+            // notifyIcon1
             // 
-            btnPartidaTeste.Location = new Point(121, 326);
-            btnPartidaTeste.Name = "btnPartidaTeste";
-            btnPartidaTeste.Size = new Size(93, 23);
-            btnPartidaTeste.TabIndex = 11;
-            btnPartidaTeste.Text = "Partida de Teste";
-            btnPartidaTeste.UseVisualStyleBackColor = true;
-            btnPartidaTeste.Click += btnPartidaTeste_Click;
+            notifyIcon1.Text = "notifyIcon1";
+            notifyIcon1.Visible = true;
             // 
             // LobbyForm
-            // 
+            //  
             AllowDrop = true;
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -483,7 +490,6 @@
             Margin = new Padding(3, 2, 3, 2);
             Name = "LobbyForm";
             Text = "Lobby";
-            Load += Lobby_Load;
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
             panel2.ResumeLayout(false);
@@ -503,7 +509,7 @@
         private ComboBox cboMatchsStatus;
         private Label label1;
         private Label label2;
-        private ListBox lboMatchs;
+        private ListBox lboMatches;
         private Label label3;
 		private Panel panel2;
 		private Label label4;
@@ -538,5 +544,6 @@
         private Label lblGetMatchesResponse;
 		private Label label14;
         private Button btnPartidaTeste;
+        private NotifyIcon notifyIcon1;
     }
 }

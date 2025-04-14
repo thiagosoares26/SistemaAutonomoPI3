@@ -1,82 +1,51 @@
 using AutoSystem_KingMe.Forms;
-using AutoSystem_KingMe.Models;
 using AutoSystem_KingMe.Models.Constants;
-using AutoSystem_KingMe.Services;
+using AutoSystem_KingMe.Services.Game;
 using KingMeServer;
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
 
 namespace AutoSystem_KingMe
 {
     public partial class LobbyForm : Form
     {
+        private readonly LobbyGameService _lobbyService;
+        private const string GROUP_NAME = "Arqueiros de Azincourt";
+
         public LobbyForm()
         {
+            _lobbyService = new LobbyGameService();
+
             InitializeComponent();
             lbVersion.Text = $"{lbVersion.Text} {Jogo.versao}";
+            cboMatchsStatus.SelectedIndex = 0;
         }
 
         private void btnGetMatchs_Click(object sender, EventArgs e)
         {
-            lblGetMatchesResponse.Text = string.Empty;
-            lboMatchs.Items.Clear();
+            lboMatches.Items.Clear();
 
             string? statusSelected = cboMatchsStatus.SelectedItem?.ToString()?.Substring(0, 1);
-            var gameResponse = MatchService.GetMatches(statusSelected);
-
-            if (gameResponse.IsSuccess)
-            {
-                gameResponse.Entities!
-                    .ForEach(match => lboMatchs.Items.Add(match));
-            }
-            else
-            {
-                lblGetMatchesResponse.Text = gameResponse.ErrorMessage;
-            }
-        }
-
-        private void Lobby_Load(object sender, EventArgs e)
-        {
-            cboMatchsStatus.SelectedIndex = 0;
+            _lobbyService.GetMatches(statusSelected)
+                .ForEach(match => lboMatches.Items.Add(match));
         }
 
         private void btnCreateMatch_Click(object sender, EventArgs e)
         {
+            lblCreationMatchResponse.Text = string.Empty;
             string name = txtBox_nomePartida.Text;
             string password = txtBox_senhaPartida.Text;
-            string nameGroup = "Arqueiros de Azincourt";
 
-            string gameResponse = MatchService.CreateMatch(name, password, nameGroup);
-            string labelText = string.Empty;
-
-            if (!gameResponse.StartsWith("ERRO")) labelText = $"ID da Partida: {gameResponse}";
-            else labelText = $"{gameResponse}";
-
-            lblCreationMatchResponse.Text = labelText;
+            string? matchId = _lobbyService.CreateMatch(name, password, GROUP_NAME);
+            if (!string.IsNullOrWhiteSpace(matchId))
+                lblCreationMatchResponse.Text = $"ID da Partida: {matchId}";
         }
 
         private void btnListPlayers_Click(object sender, EventArgs e)
         {
             lboPlayers.Items.Clear();
+            string matchId = txtBox_idPartida.Text;
 
-            string strMatchId = txtBox_idPartida.Text;
-            var gameResponse = PlayerService.GetPlayers(strMatchId);
-
-            if (!gameResponse.IsSuccess)
-            {
-                lblListPlayerResponse.Text = $"{gameResponse.ErrorMessage}";
-                return;
-            }
-
-            if (gameResponse.Entities.Any())
-            {
-                gameResponse.Entities!
-                    .ForEach(player => lboPlayers.Items.Add(player));
-            }
-            else
-            {
-                lblListPlayerResponse.Text = $"Partida sem jogadores!";
-            }
+            _lobbyService.GetPlayers(matchId)
+                .ForEach(player => lboPlayers.Items.Add(player));
         }
 
         private void btnEnterMatch_Click(object sender, EventArgs e)
@@ -89,38 +58,23 @@ namespace AutoSystem_KingMe
             string namePlayer = txtBox_PlayerName.Text;
             string passwordMatch = txtBox_PasswordMatch.Text;
 
-            EnterOnMatch(strIdMatch, namePlayer, passwordMatch);
+            _lobbyService.EnterOnMatch(strIdMatch, namePlayer, passwordMatch);
         }
-
-        private MatchForm? EnterOnMatch(string matchId, string namePlayer, string passwordMatch)
-        {
-            var gameResponse = MatchService.EnterMatch(matchId, namePlayer, passwordMatch);
-            if (gameResponse.IsSuccess)
-            {
-                var player = gameResponse.Entities.FirstOrDefault();
-                lblIdPlayer.Text = $"ID do Jogador: {player.Id}"; lblPasswordPlayer.Text = $"Senha do Jogador: {player.Password}";
-
-                var matchForm = new MatchForm(player, matchId);
-                matchForm.Show();
-                return matchForm;
-            }
-            else lblWarningError.Text = gameResponse.ErrorMessage;
-            return default;
-        }
-
 
         private void btnPartidaTeste_Click(object sender, EventArgs e)
         {
             string password = new Random().Next(1_000, 9_999).ToString();
             string matchName = Guid.NewGuid().ToString().Replace("-", string.Empty).Substring(0, 19);
 
-            string matchId = MatchService.CreateMatch(matchName, password, "Grupo Teste");
-            var matchKamikaze = EnterOnMatch(matchId, "Kamikaze", password);
-            var matchPracinha = EnterOnMatch(matchId, "Pracinha", password);
+            string? matchId = _lobbyService.CreateMatch(matchName, password, GROUP_NAME);
+            if (string.IsNullOrWhiteSpace(matchId)) return;
+            
+            var matchKamikaze = _lobbyService.EnterOnMatch(matchId, "Kamikaze", password);
+            var matchPracinha = _lobbyService.EnterOnMatch(matchId, "Pracinha", password);
 
             matchKamikaze.IniciarPartida();
             var persons = PersonConst.Names.Select(x => x.Key).ToList();
-            
+
             var playerMatchQueue = new Queue<MatchForm>();
             playerMatchQueue.Enqueue(matchKamikaze);
             playerMatchQueue.Enqueue(matchPracinha);
@@ -137,5 +91,6 @@ namespace AutoSystem_KingMe
             }
 
         }
+
     }
 }

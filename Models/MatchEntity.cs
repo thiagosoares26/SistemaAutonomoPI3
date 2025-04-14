@@ -47,6 +47,8 @@ namespace AutoSystem_KingMe.Models
         [Position(3)]
         public string Phase { get; set; }
 
+        public PlayerEntity? PlayerTurn { get; set; }
+
         public string PhaseDescription => Phase switch
         {
             "S" => "Setup",

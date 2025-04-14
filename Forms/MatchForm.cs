@@ -1,19 +1,14 @@
 ﻿using AutoSystem_KingMe.Models;
-using AutoSystem_KingMe.Models.Common;
 using AutoSystem_KingMe.Services;
+using AutoSystem_KingMe.Services.Game;
 using KingMeServer;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Windows.Forms;
 
 namespace AutoSystem_KingMe.Forms
 {
     public partial class MatchForm : Form
     {
+        private readonly MatchGameService _matchGameService;
+
         #region Campos privados
         private readonly string _matchId;
         private static string mensagemCompartilhada;
@@ -25,7 +20,7 @@ namespace AutoSystem_KingMe.Forms
 
 
         private List<string> imagensPosicionadas = new List<string>();
-        private bool esconder = false;
+        private bool hideFavorites = false;
         #endregion
 
         #region Propriedades públicas
@@ -48,23 +43,14 @@ namespace AutoSystem_KingMe.Forms
         #endregion
 
         #region Construtor
-        public MatchForm(PlayerOnGameEntity player, string matchId)
+        public MatchForm(MatchGameService matchGameService)
         {
-            PlayerOnGame = player;
-            PlayerOnGame.Status = "AGUARDANDO";
-            _matchId = matchId;
+            _matchGameService = matchGameService;
 
             InitializeComponent();
-
-
-            var getPlayersResponse = PlayerService.GetPlayers(_matchId);
-            Players = getPlayersResponse.Entities;
-
-            var playerName = Players.FirstOrDefault(x => x.Id == player.Id);
-            lblJogador.Text = $"Jogador: {playerName.Name}";
-
-            this.FormClosing += MatchForm_FormClosing;
-            timer1.Start();
+            lblJogador.Text = $"Jogador: {_matchGameService.GetPlayerName()}";
+            FormClosing += MatchForm_FormClosing;
+            turnTimer.Start();
         }
         #endregion
 
@@ -80,162 +66,125 @@ namespace AutoSystem_KingMe.Forms
                 return;
             }
 
-            IniciarPartida();
-        }
-    
-        public void IniciarPartida()
-        {
-            string gameResponse = MatchService.StartGame(PlayerOnGame);
-            if (gameResponse.StartsWith("ERRO:"))
+            var playerTurn = _matchGameService.StartMatch();
+            if (playerTurn is not null)
             {
-                statusRodada = gameResponse;
-                return;
-            }
+                lblIniciouPartida.Visible = true;
+                btnIniciarPartida.Visible = false;
+                lblTextAcoes.Visible = true;
+                pnlAcoes.Visible = true;
+                btnVerFavoritos.Visible = true;
+                lblQuantidadeNao.Visible = true;
+                ShowImages();
 
-            lblIniciouPartida.Visible = true;
-            btnIniciarPartida.Visible = false;
-
-            var initGameResponse = PlayerService.GetPlayers(_matchId);
-            if (initGameResponse.IsSuccess)
-            {
-                Players = initGameResponse.Entities;
-                var playerTurn = Players.FirstOrDefault(x => x.Id == gameResponse);
-                mensagemCompartilhada = "Partida Iniciada! Vez do jogador: " + playerTurn.Name;
-
-                statusRodada = "Setup";
+                lblIniciouPartida.Text = "Partida Iniciada! Vez do jogador: " + playerTurn.Name;
             }
         }
 
+        // todo: Mudar nome de "Favoritos", para "Cartas" ou algo mais descritivo
         private void btnVerFavoritos_Click(object sender, EventArgs e)
         {
             lblListaFavoritos.Visible = true;
-            if (esconder)
+            if (hideFavorites)
             {
                 lblListaFavoritos.Text = "Lista de favoritos: ";
                 btnVerFavoritos.Text = "Favoritos";
-                esconder = false;
             }
             else
             {
-                int playerId = Convert.ToInt32(PlayerOnGame.Id);
-                string favorites = PlayerService.GetFavorites(playerId, PlayerOnGame.Password);
+                var favorites = _matchGameService.GetFavorites();
 
                 lblListaFavoritos.Text = "Lista de favoritos: " + favorites;
                 btnVerFavoritos.Text = "Esconder lista de favoritos";
-                esconder = true;
             }
+
+            hideFavorites = !hideFavorites;
         }
 
         private void btnVerificarVez_Click(object sender, EventArgs e)
         {
-            CheckTime = MatchService.CheckTime(_matchId).Entities;
-            Players = PlayerService.GetPlayers(_matchId).Entities;
-
-            var checkPlayerTurn = Players.FirstOrDefault(x => x.Id == CheckTime.First().PlayerId);
-            if (checkPlayerTurn != null)
-                lblVezJogador.Text = $"Vez do jogador {checkPlayerTurn.Name} - ID: {checkPlayerTurn.Id}";
-        }
-
-        private void verificarVez()
-        {
-            CheckTime = MatchService.CheckTime(_matchId).Entities;
-            Players = PlayerService.GetPlayers(_matchId).Entities;
-
-            var checkPlayerTurn = Players.FirstOrDefault(x => x.Id == CheckTime.First().PlayerId);
-            if (checkPlayerTurn != null)
-                lblVezJogador.Text = $"Vez do jogador {checkPlayerTurn.Name} - ID: {checkPlayerTurn.Id}";
+            var checkTime = _matchGameService.CheckTime();
+            if (checkTime is not null)
+                lblVezJogador.Text = $"Vez do jogador {checkTime.PlayerTurn?.Name} - ID: {checkTime.PlayerTurn?.Id}";
         }
 
         private void btnPosicionarPersonagem_Click(object sender, EventArgs e)
         {
-            if (!int.TryParse(txbSetor.Text.Trim(), out int setor))
+            string letter = txbPersonagem.Text.Trim().ToUpper();
+            string sector = txbSetor.Text.Trim();
+
+            if (!int.TryParse(txbSetor.Text.Trim(), out int _))
             {
                 MessageBox.Show("Setor inválido.");
                 return;
             }
 
-            string letra = txbPersonagem.Text.Trim().ToUpper();
-            PosicionarPersonagem(setor, letra);
+            _matchGameService.PositionCharacter(sector, letter);
         }
-
-        public void PosicionarPersonagem(int setor, string letra)
-        {
-            var retorno = MatchService.PutCharacter(PlayerOnGame, setor.ToString(), letra);
-            if (retorno.IsSuccess)
-            {
-                lblMenssagemErro.Text = string.Empty;
-
-                if (retorno.Entities != null && retorno.Entities.Any())
-                {
-                    foreach (var personagem in retorno.Entities)
-                    {
-                        string sector = personagem.Sector;
-                        string letraPersonagem = personagem.Character;
-                        SalvarEstadoJogoComString(letraPersonagem, sector);
-                        verificarVez();
-                    }
-                }
-            }
-            else
-            {
-                lblMenssagemErro.Text = retorno.ErrorMessage;
-            }
-        }
-
 
         private void btnPromoverPersonagem_Click(object sender, EventArgs e)
         {
-            string letra = txbPersonagem.Text.Trim().ToUpper();
-            var retorno = MatchService.promotionCharacter(PlayerOnGame, letra);
-            Personagens = retorno.Entities;
+            string letter = txbPersonagem.Text.Trim().ToUpper();
+            _matchGameService.PromoteCharacter(letter);
 
-            if (!retorno.IsSuccess)
-            {
-                lblMenssagemErro.Text = retorno.ErrorMessage;
-                return;
-            }
+            //var retorno = MatchService.PromotionCharacter(PlayerOnGame, letra);
+            //Personagens = retorno.Entities;
 
-            statusRodada = "Setup";
-            foreach (var personagem in Personagens)
-            {
-                string letraPersonagem = personagem.Character;
-                string setor = personagem.Sector;
+            //if (!retorno.IsSuccess)
+            //{
+            //    lblMenssagemErro.Text = retorno.ErrorMessage;
+            //    return;
+            //}
 
-                if (letraPersonagem != null && setor != null)
-                {
-                    SalvarEstadoJogoComString(letraPersonagem, setor);
-                    CarregarEstadoJogo();
-                    verificarVez();
-                }
-            }
+            //statusRodada = "Setup";
+            //foreach (var personagem in Personagens)
+            //{
+            //    string letraPersonagem = personagem.Character;
+            //    string setor = personagem.Sector;
+
+            //    if (letraPersonagem != null && setor != null)
+            //    {
+            //        SalvarEstadoJogoComString(letraPersonagem, setor);
+            //        CarregarEstadoJogo();
+            //        verificarVez();
+            //    }
+            //}
         }
 
         #endregion
 
         #region Lógica de Timer (status da partida)
 
-        private void timer1_Tick(object sender, EventArgs e)
+        private void turnTimer_Tick(object sender, EventArgs e)
         {
-            timer1.Stop();
+            turnTimer.Stop();
+
+            if (_matchGameService.GameStarted)
+            {
+                var time = _matchGameService.CheckTime();
+                if (time is null) return;
+
+                lblStatusRodada.Text = time.PhaseDescription;
+                lblQuantidadeNao.Text = _matchGameService.NoQuantity.ToString();
+                ShowImages();
+
+
+
+
+            }
 
             try
             {
-                string status = MatchService.GetStatus(PlayerOnGame.Status);
 
                 if (status == "INICIADA")
                 {
-                    btnIniciarPartida.Visible = false;
-                    lblIniciouPartida.Visible = true;
-                    lblIniciouPartida.Text = mensagemCompartilhada;
-                    lblTextAcoes.Visible = true;
-                    pnlAcoes.Visible = true;
-                    btnVerFavoritos.Visible = true;
-                    lblQuantidadeNao.Visible = true;
+
                     lblStatusRodada.Text = statusRodada;
                     QuantidadeNaos();
                     lblQuantidadeNao.Text = Convert.ToString(qtdNao);
 
-                    MostrarTodasAsImagens();
+
+                    // here
                     CarregarEstadoJogo();
 
                     var time = MatchService.CheckTime(_matchId).Entities.FirstOrDefault();
@@ -258,7 +207,7 @@ namespace AutoSystem_KingMe.Forms
             }
             finally
             {
-                timer1.Start();
+                turnTimer.Start();
             }
         }
 
@@ -266,7 +215,7 @@ namespace AutoSystem_KingMe.Forms
 
         #region Métodos auxiliares
 
-        private void MostrarTodasAsImagens()
+        private void ShowImages()
         {
             foreach (Control control in this.Controls)
             {
@@ -276,45 +225,6 @@ namespace AutoSystem_KingMe.Forms
                 }
             }
         }
-
-        private void SalvarEstadoJogoComString(string letraPersonagem, string setor)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(letraPersonagem) || string.IsNullOrWhiteSpace(setor))
-                {
-                    return;
-                }
-
-                var linhas = new List<string>();
-
-                if (File.Exists(_estadoJogoPath))
-                {
-                    var existentes = File.ReadAllLines(_estadoJogoPath);
-                    foreach (var linha in existentes)
-                    {
-                        var partes = linha.Split(':');
-                        if (partes.Length == 2)
-                        {
-                            string letraExistente = partes[0].Trim().ToUpper();
-                            if (letraExistente != letraPersonagem.Trim().ToUpper())
-                            {
-                                linhas.Add(linha);
-                            }
-                        }
-                    }
-                }
-
-                linhas.Add($"{letraPersonagem.Trim().ToUpper()}:{setor}");
-                File.WriteAllLines(_estadoJogoPath, linhas);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Erro ao salvar estado do jogo: {ex.Message}");
-            }
-        }
-
-
 
         private void LimparEstadoJogo()
         {
@@ -339,20 +249,15 @@ namespace AutoSystem_KingMe.Forms
         {
             try
             {
-                if (!File.Exists(_estadoJogoPath))
-                    return;
-
-                var linhas = File.ReadAllLines(_estadoJogoPath);
                 contadorImagensPorSetor.Clear();
+                
 
-                foreach (var linha in linhas)
+
+                foreach (var characters in _matchGameService.CharactersOnTable)
                 {
-                    var partes = linha.Split(':');
-                    if (partes.Length != 2) continue;
-
-                    string letra = partes[0].Trim().ToUpper();
-                    if (!int.TryParse(partes[1].Trim(), out int setor)) continue;
-                    if (!setores.ContainsKey(setor)) continue;
+                    //string letra = partes[0].Trim().ToUpper();
+                    //if (!int.TryParse(partes[1].Trim(), out int setor)) continue;
+                    //if (!setores.ContainsKey(setor)) continue;
 
 
                     if (!contadorImagensPorSetor.ContainsKey(setor))
@@ -375,26 +280,6 @@ namespace AutoSystem_KingMe.Forms
             catch (Exception ex)
             {
                 MessageBox.Show($"Erro ao carregar estado do jogo: {ex.Message}");
-            }
-        }
-
-        private void QuantidadeNaos()
-        {
-            if (Players != null && qtdNao is null)
-            {
-                int quantidade = Players.Count;
-                if (quantidade == 3)
-                {
-                    qtdNao = 4;
-                }
-                else if (quantidade == 4)
-                {
-                    qtdNao = 3;
-                }
-                else if (quantidade >= 5)
-                {
-                    qtdNao = 2;
-                }
             }
         }
 

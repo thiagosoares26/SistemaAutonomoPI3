@@ -44,7 +44,7 @@
             lblTextAcoes = new Label();
             btnVerFavoritos = new Button();
             lblListaFavoritos = new Label();
-            timer1 = new System.Windows.Forms.Timer(components);
+            turnTimer = new System.Windows.Forms.Timer(components);
             lblJogador = new Label();
             picA = new PictureBox();
             picB = new PictureBox();
@@ -263,10 +263,10 @@
             lblListaFavoritos.Text = "Favoritos:";
             lblListaFavoritos.Visible = false;
             // 
-            // timer1
+            // turnTimer
             // 
-            timer1.Interval = 2000;
-            timer1.Tick += timer1_Tick;
+            turnTimer.Interval = 2000;
+            turnTimer.Tick += turnTimer_Tick;
             // 
             // lblJogador
             // 
@@ -628,7 +628,7 @@
 		private Label lblTextAcoes;
 		private Button btnVerFavoritos;
 		private Label lblListaFavoritos;
-		private System.Windows.Forms.Timer timer1;
+		private System.Windows.Forms.Timer turnTimer;
 		private Label lblJogador;
 		private PictureBox picA;
 		private PictureBox picB;
