@@ -1,6 +1,6 @@
 ﻿namespace AutoSystem_KingMe.Models.Constants
 {
-    public static class PersonConst
+    public static class CharacterConst
     {
         public static Dictionary<string, string> Names = new Dictionary<string, string>()
         {

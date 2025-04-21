@@ -1,6 +1,7 @@
 ﻿using AutoSystem_KingMe.Helper;
 using AutoSystem_KingMe.Models;
 using AutoSystem_KingMe.Models.Common;
+using AutoSystem_KingMe.Models.Common.Interfaces;
 using KingMeServer;
 
 namespace AutoSystem_KingMe.Services
@@ -9,14 +10,15 @@ namespace AutoSystem_KingMe.Services
     {
 		private static Dictionary<string, string> matchStatuses = new Dictionary<string, string>();
 
-		public static GameResponse<MatchEntity> GetMatches(string? status = "T") =>
+		public static IGameResponse<MatchEntity> GetMatches(string? status = "T") =>
             Jogo.ListarPartidas(status)
                 .HandleReponse<MatchEntity>();
 
-        public static string CreateMatch(string nameMatch, string passwordMatch, string nameGroup) =>
-            Jogo.CriarPartida(nameMatch, passwordMatch, nameGroup);
+        public static IRawGameResponse CreateMatch(string nameMatch, string passwordMatch, string nameGroup) =>
+            Jogo.CriarPartida(nameMatch, passwordMatch, nameGroup)
+				.HandleRawResponse();
 
-        public static GameResponse<PlayerOnGameEntity> EnterMatch(string strIdMatch, string playerName, string passwordMatch)
+        public static IGameResponse<PlayerOnGameEntity> EnterMatch(string strIdMatch, string playerName, string passwordMatch)
         {
             if (!int.TryParse(strIdMatch, out int idMatch))
                 return new GameResponse<PlayerOnGameEntity>() { ErrorMessage = "ID da partida está incorreto." };
@@ -25,43 +27,33 @@ namespace AutoSystem_KingMe.Services
             return gameResponse.HandleReponse<PlayerOnGameEntity>();
         }
 
-		public static string StartGame(PlayerOnGameEntity player)
-		{
-			string response = Jogo.Iniciar(int.Parse(player.Id), player.Password);
-			if (response.StartsWith("ERRO:"))
-			{
-				matchStatuses[player.Status] = "ERRO";
-				return response.Replace("ERRO:", "");
-			}
-			else
-			{
-				matchStatuses[player.Status] = "INICIADA";
-				return response;
-			}
-		}
+		public static IRawGameResponse StartGame(PlayerOnGameEntity player) =>
+			Jogo.Iniciar(int.Parse(player.Id), player.Password)
+			    .HandleRawResponse();
 
-		public static string GetStatus(string statusKey)
-		{
-			if (string.IsNullOrEmpty(statusKey))
-				return "AGUARDANDO";
+		public static IRawGameResponse Voting(PlayerOnGameEntity player, string voting, int noQuantity)
+        {
+            if (voting == "N" && noQuantity <= 0) return new GameResponse<PlayerOnGameEntity>() { ErrorMessage = "Todos seus \"Nãos\" já foram utilizados." };
 
-			if (matchStatuses.ContainsKey(statusKey) && matchStatuses[statusKey] != null)
-				return matchStatuses[statusKey];
+            return Jogo.Votar(int.Parse(player.Id), player.Password, voting)
+                .HandleRawResponse();
+        }
 
-			return "AGUARDANDO";
-		}
+		public static IRawGameResponse GetHistoryGame(int matchId, bool formatted, bool completed) =>
+            Jogo.ConsultarHistorico(matchId, formatted, completed)
+                .HandleRawResponse(throwError: false);
 
-		public static GameResponse<CharacterEntity> PutCharacter(PlayerOnGameEntity player, string sector, string character) =>
+        public static IGameResponse<SectorCharacterEntity> PutCharacter(PlayerOnGameEntity player, string sector, string character) =>
             Jogo.ColocarPersonagem(int.Parse(player.Id), player.Password, int.Parse(sector), character)
-				.HandleReponse<CharacterEntity>();
+				.HandleReponse<SectorCharacterEntity>();
 
-        public static GameResponse<CheckTimeEntity> CheckTime(string idMatch) =>
+        public static IOneGameResponse<CheckTimeEntity> CheckTime(string idMatch) =>
             Jogo.VerificarVez(int.Parse(idMatch))
-                .HandleReponse<CheckTimeEntity>();
+                .HandleOneResponse<CheckTimeEntity>(throwError: false);
 
-		public static GameResponse<CharacterEntity> promotionCharacter(PlayerOnGameEntity player, string character) =>
+		public static IGameResponse<SectorCharacterEntity> PromotionCharacter(PlayerOnGameEntity player, string character) =>
 			Jogo.Promover(int.Parse(player.Id), player.Password, character)
-				.HandleReponse<CharacterEntity>();
+				.HandleReponse<SectorCharacterEntity>();
 		
     }
 }

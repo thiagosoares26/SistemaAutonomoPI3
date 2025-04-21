@@ -1,20 +1,21 @@
 ﻿using AutoSystem_KingMe.Helper;
 using AutoSystem_KingMe.Models;
 using AutoSystem_KingMe.Models.Common;
+using AutoSystem_KingMe.Models.Common.Interfaces;
 using KingMeServer;
 
 namespace AutoSystem_KingMe.Services
 {
     public static class PlayerService
     {
-        public static GameResponse<PlayerEntity> GetPlayers(string strMatchId)
+        public static IGameResponse<PlayerEntity> GetPlayers(string strMatchId)
         {
             if (!int.TryParse(strMatchId, out int matchId))
                 return new GameResponse<PlayerEntity>() { ErrorMessage = "PlayerId da partida inválido." };
 
             var response = Jogo.ListarJogadores(matchId);
             return response.HandleReponse<PlayerEntity>();
-        }
+        }	
 
 		private static Dictionary<string, List<PersonagemPosicao>> _posicoesPorPartida = new();
 		public static void DefinirPosicao(string matchId, string letra, int setor)
@@ -39,9 +40,9 @@ namespace AutoSystem_KingMe.Services
 			return new List<PersonagemPosicao>();
 		}
 
-		public static string GetFavorites(int idplayer, string passwordplayer) =>
-			Jogo.ListarCartas(idplayer, passwordplayer);
-
+		public static IRawGameResponse GetFavorites(int idplayer, string passwordplayer) =>
+			Jogo.ListarCartas(idplayer, passwordplayer)
+				.HandleRawResponse();
 
 	}
 }
