@@ -27,45 +27,33 @@ namespace AutoSystem_KingMe.Services
             return gameResponse.HandleReponse<PlayerOnGameEntity>();
         }
 
-		public static IRawGameResponse StartGame(PlayerOnGameEntity player)
-		{
-			string response = Jogo.Iniciar(int.Parse(player.Id), player.Password);
-			//if (response.StartsWith("ERRO:"))
-			//{
-			//	matchStatuses[player.Status] = "ERRO";
-			//	return response.Replace("ERRO:", "");
-			//}
-			//else
-			//{
-			//	matchStatuses[player.Status] = "INICIADA";
-			//	return response;
-			//}
+		public static IRawGameResponse StartGame(PlayerOnGameEntity player) =>
+			Jogo.Iniciar(int.Parse(player.Id), player.Password)
+			    .HandleRawResponse();
 
-			return response.HandleRawResponse();
-		}
+		public static IRawGameResponse Voting(PlayerOnGameEntity player, string voting, int noQuantity)
+        {
+            if (voting == "N" && noQuantity <= 0) return new GameResponse<PlayerOnGameEntity>() { ErrorMessage = "Todos seus \"Nãos\" já foram utilizados." };
 
-		public static string GetStatus(string statusKey)
-		{
-			if (string.IsNullOrEmpty(statusKey))
-				return "AGUARDANDO";
+            return Jogo.Votar(int.Parse(player.Id), player.Password, voting)
+                .HandleRawResponse();
+        }
 
-			if (matchStatuses.ContainsKey(statusKey) && matchStatuses[statusKey] != null)
-				return matchStatuses[statusKey];
+		public static IRawGameResponse GetHistoryGame(int matchId, bool formatted, bool completed) =>
+            Jogo.ConsultarHistorico(matchId, formatted, completed)
+                .HandleRawResponse(throwError: false);
 
-			return "AGUARDANDO";
-		}
-
-		public static IGameResponse<CharacterEntity> PutCharacter(PlayerOnGameEntity player, string sector, string character) =>
+        public static IGameResponse<SectorCharacterEntity> PutCharacter(PlayerOnGameEntity player, string sector, string character) =>
             Jogo.ColocarPersonagem(int.Parse(player.Id), player.Password, int.Parse(sector), character)
-				.HandleReponse<CharacterEntity>();
+				.HandleReponse<SectorCharacterEntity>();
 
         public static IOneGameResponse<CheckTimeEntity> CheckTime(string idMatch) =>
             Jogo.VerificarVez(int.Parse(idMatch))
-                .HandleOneResponse<CheckTimeEntity>();
+                .HandleOneResponse<CheckTimeEntity>(throwError: false);
 
-		public static IGameResponse<CharacterEntity> PromotionCharacter(PlayerOnGameEntity player, string character) =>
+		public static IGameResponse<SectorCharacterEntity> PromotionCharacter(PlayerOnGameEntity player, string character) =>
 			Jogo.Promover(int.Parse(player.Id), player.Password, character)
-				.HandleReponse<CharacterEntity>();
+				.HandleReponse<SectorCharacterEntity>();
 		
     }
 }

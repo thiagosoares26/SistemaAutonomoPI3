@@ -1,7 +1,10 @@
+using AutoSystem_KingMe.Controller;
 using AutoSystem_KingMe.Forms;
 using AutoSystem_KingMe.Models.Constants;
 using AutoSystem_KingMe.Services.Game;
 using KingMeServer;
+using System.Reactive.Linq;
+using System.Text.RegularExpressions;
 
 namespace AutoSystem_KingMe
 {
@@ -50,45 +53,54 @@ namespace AutoSystem_KingMe
 
         private void btnEnterMatch_Click(object sender, EventArgs e)
         {
-            lblWarningError.Text = string.Empty;
             lblIdPlayer.Text = string.Empty;
             lblPasswordPlayer.Text = string.Empty;
 
-            string strIdMatch = txtBox_IdMatch.Text;
+            string matchId = txtBox_IdMatch.Text;
             string namePlayer = txtBox_PlayerName.Text;
             string passwordMatch = txtBox_PasswordMatch.Text;
 
-            _lobbyService.EnterOnMatch(strIdMatch, namePlayer, passwordMatch);
+            _lobbyService.EnterOnMatch(matchId, namePlayer, passwordMatch, false);
         }
 
-        private void btnPartidaTeste_Click(object sender, EventArgs e)
+        private void btnPartidaAutomacao_Click(object sender, EventArgs e)
         {
-            string password = new Random().Next(1_000, 9_999).ToString();
-            string matchName = Guid.NewGuid().ToString().Replace("-", string.Empty).Substring(0, 19);
 
-            string? matchId = _lobbyService.CreateMatch(matchName, password, GROUP_NAME);
-            if (string.IsNullOrWhiteSpace(matchId)) return;
-            
-            var matchKamikaze = _lobbyService.EnterOnMatch(matchId, "Kamikaze", password);
-            var matchPracinha = _lobbyService.EnterOnMatch(matchId, "Pracinha", password);
+            string matchId = txtBox_IdMatch.Text;
+            string namePlayer = txtBox_PlayerName.Text;
+            string passwordMatch = txtBox_PasswordMatch.Text;
 
-            matchKamikaze.IniciarPartida();
-            var persons = PersonConst.Names.Select(x => x.Key).ToList();
+            var automationService = _lobbyService.EnterOnMatch(matchId, namePlayer, passwordMatch, true);
+            if (automationService is null) return;
 
-            var playerMatchQueue = new Queue<MatchForm>();
-            playerMatchQueue.Enqueue(matchKamikaze);
-            playerMatchQueue.Enqueue(matchPracinha);
+            new AutomationController(automationService);
 
-            int setor = 4;
-            for (int i = 0; i < persons.Count; i++)
-            {
-                var person = persons[i];
-                var player = playerMatchQueue.Dequeue();
-                playerMatchQueue.Enqueue(player);
+            //string password = new Random().Next(1_000, 9_999).ToString();
+            //string matchName = Guid.NewGuid().ToString().Replace("-", string.Empty).Substring(0, 19);
 
-                player.PosicionarPersonagem(setor, person);
-                if ((i + 1) % 4 == 1) setor--;
-            }
+            //string? matchId = _lobbyService.CreateMatch(matchName, password, GROUP_NAME);
+            //if (string.IsNullOrWhiteSpace(matchId)) return;
+
+            //var matchServiceKamikaze = _lobbyService.EnterOnMatch(matchId, "Kamikaze", password, false);
+            //var matchServicePracinha = _lobbyService.EnterOnMatch(matchId, "Pracinha", password, false);
+
+            //if (matchServiceKamikaze is null || matchServicePracinha is null) return;
+
+            //matchServiceKamikaze.StartMatch();
+            //var persons = CharacterConst.Names.Select(x => x.Key).ToList();
+
+            //var services = new List<MatchGameService>() { matchServiceKamikaze, matchServicePracinha };
+
+            //int setor = 4;
+            //for (int i = 0; i < persons.Count; i++)
+            //{
+            //    var person = persons[i];
+            //    var time = matchServiceKamikaze.CheckTime();
+
+            //    var player = services.FirstOrDefault(x => x.PlayerOnGame.Id == time.PlayerId);
+            //    player.PositionCharacter(setor.ToString(), person);
+            //    if ((i + 1) % 4 == 1) setor--;
+            //}
 
         }
 

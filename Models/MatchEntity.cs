@@ -59,7 +59,7 @@ namespace AutoSystem_KingMe.Models
 
     }
 
-    public class CharacterEntity : EntityBase
+    public class SectorCharacterEntity : EntityBase
     {
         [Position(0)]
         public string Sector { get; set; }

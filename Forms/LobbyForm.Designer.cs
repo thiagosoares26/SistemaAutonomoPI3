@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
             btnGetMatchs = new Button();
             panel1 = new Panel();
             lblGetMatchesResponse = new Label();
@@ -58,8 +57,7 @@
             lbVersion = new Label();
             lbGroup = new Label();
             panel3 = new Panel();
-            btnPartidaTeste = new Button();
-            lblWarningError = new Label();
+            btnPartidaAutomacao = new Button();
             lblPasswordPlayer = new Label();
             lblIdPlayer = new Label();
             txtBox_PlayerName = new TextBox();
@@ -69,7 +67,6 @@
             txtBox_IdMatch = new TextBox();
             label10 = new Label();
             btnEnterMatch = new Button();
-            notifyIcon1 = new NotifyIcon(components);
             panel1.SuspendLayout();
             panel2.SuspendLayout();
             panel4.SuspendLayout();
@@ -356,8 +353,7 @@
             // panel3
             // 
             panel3.BorderStyle = BorderStyle.FixedSingle;
-            panel3.Controls.Add(btnPartidaTeste);
-            panel3.Controls.Add(lblWarningError);
+            panel3.Controls.Add(btnPartidaAutomacao);
             panel3.Controls.Add(lblPasswordPlayer);
             panel3.Controls.Add(lblIdPlayer);
             panel3.Controls.Add(txtBox_PlayerName);
@@ -372,23 +368,15 @@
             panel3.Size = new Size(219, 362);
             panel3.TabIndex = 20;
             // 
-            // btnPartidaTeste
+            // btnPartidaAutomacao
             // 
-            btnPartidaTeste.Location = new Point(121, 326);
-            btnPartidaTeste.Name = "btnPartidaTeste";
-            btnPartidaTeste.Size = new Size(93, 23);
-            btnPartidaTeste.TabIndex = 11;
-            btnPartidaTeste.Text = "Partida de Teste";
-            btnPartidaTeste.UseVisualStyleBackColor = true;
-            btnPartidaTeste.Click += btnPartidaTeste_Click;
-            // 
-            // lblWarningError
-            // 
-            lblWarningError.ForeColor = Color.Red;
-            lblWarningError.Location = new Point(-1, 289);
-            lblWarningError.Name = "lblWarningError";
-            lblWarningError.Size = new Size(218, 33);
-            lblWarningError.TabIndex = 10;
+            btnPartidaAutomacao.Location = new Point(121, 299);
+            btnPartidaAutomacao.Name = "btnPartidaAutomacao";
+            btnPartidaAutomacao.Size = new Size(93, 35);
+            btnPartidaAutomacao.TabIndex = 11;
+            btnPartidaAutomacao.Text = "Automação";
+            btnPartidaAutomacao.UseVisualStyleBackColor = true;
+            btnPartidaAutomacao.Click += btnPartidaAutomacao_Click;
             // 
             // lblPasswordPlayer
             // 
@@ -456,21 +444,16 @@
             // 
             // btnEnterMatch
             // 
-            btnEnterMatch.Location = new Point(6, 326);
+            btnEnterMatch.Location = new Point(3, 299);
             btnEnterMatch.Name = "btnEnterMatch";
-            btnEnterMatch.Size = new Size(109, 23);
+            btnEnterMatch.Size = new Size(112, 35);
             btnEnterMatch.TabIndex = 0;
             btnEnterMatch.Text = "Entrar na Partida";
             btnEnterMatch.UseVisualStyleBackColor = true;
             btnEnterMatch.Click += btnEnterMatch_Click;
             // 
-            // notifyIcon1
-            // 
-            notifyIcon1.Text = "notifyIcon1";
-            notifyIcon1.Visible = true;
-            // 
             // LobbyForm
-            //  
+            // 
             AllowDrop = true;
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -540,10 +523,8 @@
 		private TextBox txtBox_PlayerName;
 		private Label lblPasswordPlayer;
 		private Label lblIdPlayer;
-		private Label lblWarningError;
         private Label lblGetMatchesResponse;
 		private Label label14;
-        private Button btnPartidaTeste;
-        private NotifyIcon notifyIcon1;
+        private Button btnPartidaAutomacao;
     }
 }

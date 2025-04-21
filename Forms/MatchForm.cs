@@ -1,83 +1,64 @@
-﻿using AutoSystem_KingMe.Models;
-using AutoSystem_KingMe.Services;
+﻿using AutoSystem_KingMe.Models.Constants;
 using AutoSystem_KingMe.Services.Game;
-using KingMeServer;
 
 namespace AutoSystem_KingMe.Forms
 {
     public partial class MatchForm : Form
     {
         private readonly MatchGameService _matchGameService;
-
-        #region Campos privados
-        private readonly string _matchId;
-        private static string mensagemCompartilhada;
-        private readonly string _estadoJogoPath = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName, "Forms", "game_state.txt");
-        private readonly object lockAtualizacao = new object();
-        private Dictionary<int, int> contadorImagensPorSetor = new Dictionary<int, int>();
-        string statusRodada;
-        int? qtdNao = null;
-
-
-        private List<string> imagensPosicionadas = new List<string>();
         private bool hideFavorites = false;
-        #endregion
+        private bool isAutomation;
 
-        #region Propriedades públicas
-        public readonly PlayerOnGameEntity PlayerOnGame;
-        public List<CheckTimeEntity> CheckTime { get; set; }
-        public List<CharacterEntity> Personagens { get; set; }
-        public List<PlayerEntity> Players { get; set; }
-        #endregion
-
-        #region Estruturas auxiliares
-        private Dictionary<int, Point> setores = new Dictionary<int, Point>
+        private Dictionary<string, Point> sectorPositions = new Dictionary<string, Point>
         {
-            { 0, new Point(603, 661) }, { 1, new Point(603, 603) },
-            { 2, new Point(603, 533) }, { 3, new Point(603, 461) },
-            { 4, new Point(603, 395) }, { 5, new Point(603, 331) },
-            { 10, new Point(699, 264) }
+            { "0", new Point(603, 661) }, { "1", new Point(603, 603) },
+            { "2", new Point(603, 533) }, { "3", new Point(603, 461) },
+            { "4", new Point(603, 395) }, { "5", new Point(603, 331) },
+            { "10", new Point(699, 264) }
         };
 
-        private Dictionary<int, List<PictureBox>> imagensPorSetor = new Dictionary<int, List<PictureBox>>();
-        #endregion
-
-        #region Construtor
-        public MatchForm(MatchGameService matchGameService)
+        public MatchForm(MatchGameService matchGameService, bool isAutomation)
         {
+            this.isAutomation = isAutomation;
             _matchGameService = matchGameService;
 
             InitializeComponent();
-            lblJogador.Text = $"Jogador: {_matchGameService.GetPlayerName()}";
             FormClosing += MatchForm_FormClosing;
             turnTimer.Start();
         }
-        #endregion
 
         #region Botões principais
 
+        private void InitGame()
+        {
+            if (!_matchGameService.GameInited)
+            {
+                if (!isAutomation)
+                {
+                    lblIniciouPartida.Visible = true;
+                    lblTextAcoes.Visible = true;
+                    pnlAcoes.Visible = true;
+                    lblQuantidadeNao.Visible = true;
+                    btnVerificarVez.Visible = true;
+                }
+
+                btnIniciarPartida.Visible = false;
+                btnVerFavoritos.Visible = true;
+                lblJogador.Text = $"Jogador: {_matchGameService.GetPlayerName()}";
+
+                ShowImages();
+                _matchGameService.DefineNoQuantity();
+                _matchGameService.GameInited = true;
+            }
+        }
+
         private void btnIniciarPartida_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(_matchId))
-            {
-                btnIniciarPartida.Visible = false;
-                lblIniciouPartida.Visible = true;
-                lblIniciouPartida.Text = "Partida não pode ser inciada! Sem referência de ID";
-                return;
-            }
-
             var playerTurn = _matchGameService.StartMatch();
             if (playerTurn is not null)
             {
-                lblIniciouPartida.Visible = true;
-                btnIniciarPartida.Visible = false;
-                lblTextAcoes.Visible = true;
-                pnlAcoes.Visible = true;
-                btnVerFavoritos.Visible = true;
-                lblQuantidadeNao.Visible = true;
-                ShowImages();
-
                 lblIniciouPartida.Text = "Partida Iniciada! Vez do jogador: " + playerTurn.Name;
+                InitGame();
             }
         }
 
@@ -126,29 +107,6 @@ namespace AutoSystem_KingMe.Forms
         {
             string letter = txbPersonagem.Text.Trim().ToUpper();
             _matchGameService.PromoteCharacter(letter);
-
-            //var retorno = MatchService.PromotionCharacter(PlayerOnGame, letra);
-            //Personagens = retorno.Entities;
-
-            //if (!retorno.IsSuccess)
-            //{
-            //    lblMenssagemErro.Text = retorno.ErrorMessage;
-            //    return;
-            //}
-
-            //statusRodada = "Setup";
-            //foreach (var personagem in Personagens)
-            //{
-            //    string letraPersonagem = personagem.Character;
-            //    string setor = personagem.Sector;
-
-            //    if (letraPersonagem != null && setor != null)
-            //    {
-            //        SalvarEstadoJogoComString(letraPersonagem, setor);
-            //        CarregarEstadoJogo();
-            //        verificarVez();
-            //    }
-            //}
         }
 
         #endregion
@@ -159,56 +117,29 @@ namespace AutoSystem_KingMe.Forms
         {
             turnTimer.Stop();
 
-            if (_matchGameService.GameStarted)
+            var time = _matchGameService.CheckTime();
+            if (time is not null && time.Status == "J")
             {
-                var time = _matchGameService.CheckTime();
+                InitGame();
+
                 if (time is null) return;
 
                 lblStatusRodada.Text = time.PhaseDescription;
                 lblQuantidadeNao.Text = _matchGameService.NoQuantity.ToString();
+                lblVezJogador.Text = $"Vez do jogador {time.PlayerTurn?.Name} - ID: {time.PlayerTurn?.Id}";
+                lblJogador.Text = $"Jogador: {_matchGameService.GetPlayerName()}";
+
                 ShowImages();
+                ReloadState();
 
-
-
-
-            }
-
-            try
-            {
-
-                if (status == "INICIADA")
+                if (time.Phase == "V" && time.PlayerId == _matchGameService.PlayerOnGame.Id)
                 {
-
-                    lblStatusRodada.Text = statusRodada;
-                    QuantidadeNaos();
-                    lblQuantidadeNao.Text = Convert.ToString(qtdNao);
-
-
-                    // here
-                    CarregarEstadoJogo();
-
-                    var time = MatchService.CheckTime(_matchId).Entities.FirstOrDefault();
-                    if (time is not null)
-                    {
-                        if (time.Phase == "V" && time.PlayerId == PlayerOnGame.Id)
-                        {
-                            lblVotacao.Visible = true;
-                            pnlVotacao.Visible = true;
-                        }
-                    }
-
-                }
-                else if (status == "ERRO")
-                {
-                    btnIniciarPartida.Visible = false;
-                    lblIniciouPartida.Visible = true;
-                    lblIniciouPartida.Text = "Erro ao iniciar a partida.";
+                    lblVotacao.Visible = true;
+                    pnlVotacao.Visible = true;
                 }
             }
-            finally
-            {
-                turnTimer.Start();
-            }
+
+            turnTimer.Start();
         }
 
         #endregion
@@ -226,55 +157,49 @@ namespace AutoSystem_KingMe.Forms
             }
         }
 
-        private void LimparEstadoJogo()
-        {
-            try
-            {
-                File.WriteAllText(_estadoJogoPath, string.Empty);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Erro ao limpar o estado do jogo: {ex.Message}");
-            }
-        }
-
-
-        private PictureBox EncontrarPictureBox(string letra)
+        private PictureBox FindPictureBox(string letra)
         {
             string nome = "pic" + letra.ToUpper();
             return Controls.Find(nome, true).FirstOrDefault() as PictureBox;
         }
 
-        private void CarregarEstadoJogo()
+        private void ReloadState()
         {
             try
             {
-                contadorImagensPorSetor.Clear();
-                
+                var imagesCounterBySector = new Dictionary<string, int>();
+                var charactersPositions = _matchGameService.GetCharacterPositions(out bool isPositionsChanged);
+                var characters = CharacterConst.Names.Select(x => x.Key);
 
+                // Caso as posições não tenham sido modificadas, não deve reposicionar as imagens
+                if (!isPositionsChanged) return;
 
-                foreach (var characters in _matchGameService.CharactersOnTable)
+                foreach (var letter in characters)
                 {
-                    //string letra = partes[0].Trim().ToUpper();
-                    //if (!int.TryParse(partes[1].Trim(), out int setor)) continue;
-                    //if (!setores.ContainsKey(setor)) continue;
+                    PictureBox pictureBox = FindPictureBox(letter);
+                    if (!charactersPositions.ContainsKey(letter)) continue;
 
+                    string sector = charactersPositions[letter];
+                    if (!imagesCounterBySector.ContainsKey(sector))
+                        imagesCounterBySector[sector] = 0;
 
-                    if (!contadorImagensPorSetor.ContainsKey(setor))
-                        contadorImagensPorSetor[setor] = 0;
+                    if (sector == "-1") // Personagem removido
+                    {
+                        pictureBox.Visible = false;
+                        continue;
+                    }
 
-                    int deslocamento = contadorImagensPorSetor[setor] * 30;
-                    Point basePos = setores[setor];
-                    Point novaPos = new Point(basePos.X + deslocamento, basePos.Y);
+                    int margin = imagesCounterBySector[sector] * 30;
+                    Point basePosition = sectorPositions[sector];
+                    Point newPosition = new Point(basePosition.X + margin, basePosition.Y);
 
-                    PictureBox pictureBox = EncontrarPictureBox(letra);
                     if (pictureBox != null)
                     {
                         pictureBox.Visible = true;
-                        pictureBox.Location = novaPos;
+                        pictureBox.Location = newPosition;
                     }
 
-                    contadorImagensPorSetor[setor]++;
+                    imagesCounterBySector[sector]++;
                 }
             }
             catch (Exception ex)
@@ -296,26 +221,21 @@ namespace AutoSystem_KingMe.Forms
                 e.Cancel = true;
                 return;
             }
-
-            File.WriteAllText(_estadoJogoPath, string.Empty);
-            LimparEstadoJogo();
         }
 
         #endregion
 
         private void btnVotar_Click(object sender, EventArgs e)
         {
-            bool aceito = rdoAceitarVotacao.Checked;
-            string votacao = aceito ? "S" : "N";
+            bool accepted = rdoAceitarVotacao.Checked;
+            string voting = accepted ? "S" : "N";
 
-            var votacaoResponse = Jogo.Votar(int.Parse(PlayerOnGame.Id), PlayerOnGame.Password, votacao);
-            if (!votacaoResponse.StartsWith("ERRO"))
+            var gameResponse = _matchGameService.Voting(voting);
+            gameResponse.OnSuccess(x =>
             {
                 pnlVotacao.Visible = false;
                 lblVotacao.Visible = false;
-
-                if (!aceito) qtdNao--;
-            }
+            });
         }
 
     }

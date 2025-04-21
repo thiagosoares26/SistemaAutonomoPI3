@@ -23,16 +23,17 @@ namespace AutoSystem_KingMe.Services.Game
             return gameResponse.OnSuccess(players => players) ?? new();
         }
 
-        public MatchForm? EnterOnMatch(string matchId, string playerName, string matchPassword)
+        public MatchGameService? EnterOnMatch(string matchId, string playerName, string matchPassword, bool isAutomation)
         {
             var gameResponse = MatchService.EnterMatch(matchId, playerName, matchPassword);
             return gameResponse.OnSuccess(playerOnGame =>
             {
                 var player = gameResponse.Entities.FirstOrDefault();
-                var matchForm = new MatchForm(new MatchGameService(matchId, player));
+                var matchGameService = new MatchGameService(matchId, player);
+                var matchForm = new MatchForm(matchGameService, isAutomation);
                 matchForm.Show();
 
-                return matchForm;
+                return matchGameService;
             });
 
         }

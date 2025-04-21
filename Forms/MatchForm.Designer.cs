@@ -265,7 +265,7 @@
             // 
             // turnTimer
             // 
-            turnTimer.Interval = 2000;
+            turnTimer.Interval = 500;
             turnTimer.Tick += turnTimer_Tick;
             // 
             // lblJogador
@@ -451,6 +451,7 @@
             btnVerificarVez.TabIndex = 22;
             btnVerificarVez.Text = "Verificar Vez";
             btnVerificarVez.UseVisualStyleBackColor = true;
+            btnVerificarVez.Visible = false;
             btnVerificarVez.Click += btnVerificarVez_Click;
             // 
             // lblQuantidadeNao

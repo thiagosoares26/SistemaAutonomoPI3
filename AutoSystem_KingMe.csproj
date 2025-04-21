@@ -13,6 +13,7 @@
       <HintPath>KingMeServer.dll</HintPath>
     </Reference>
 	<PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
+	<PackageReference Include="System.Reactive" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,10 +29,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\Controller\" />
   </ItemGroup>
 
 </Project>
