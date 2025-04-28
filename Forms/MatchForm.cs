@@ -10,6 +10,7 @@ namespace AutoSystem_KingMe.Forms
 		private bool hideFavorites = false;
 		private bool isAutomation;
 
+
 		private Dictionary<string, Point> positionInitial = new Dictionary<string, Point>
 		{
 			{ "A", new Point(63, 329) }, { "B", new Point(91, 329) },
